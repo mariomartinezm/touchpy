@@ -3,60 +3,75 @@ import subprocess
 import re
 
 
+class Device:
+    def __init__(self, name):
+        self.name = name
+        self.dev_id = 0
+        self.properties = {}
+
+
 class Model:
     """
     A class responsible for interfacing with libinput
     """
     def __init__(self):
-        # Get device names
-        process = subprocess.Popen(['xinput', 'list', '--name-only'],
+        # Get names of all devices managed by libinput
+        args = ['xinput', 'list', '--name-only']
+        full_names, err = self.__run_command(args)
+
+        # Get names of touchpad devices
+        p = re.compile(r'.*touchpad', re.IGNORECASE)
+        names = p.findall(full_names)
+
+        self.devices = {}
+
+        for name, index in zip(names, range(0, len(names))):
+            args = ['xinput', 'list', '--id-only', name]
+            dev_id, err = self.__run_command(args)
+
+            dev = Device(name)
+            dev.dev_id = int(dev_id)
+            dev.properties = self.get_device_properties(dev.name)
+
+            key = "Touchpad " + str(index)
+            self.devices.update({key: dev})
+
+        # Get names of mouse devices
+        p = re.compile(r'.*mouse', re.IGNORECASE)
+        names = p.findall(full_names)
+
+        for name, index in zip(names, range(0, len(names))):
+            args = ['xinput', 'list', '--id-only', name]
+            dev_id, err = self.__run_command(args)
+
+            dev = Device(name)
+            dev.dev_id = int(dev_id)
+
+            key = "Mouse " + str(index)
+            self.devices.update({key: dev})
+
+    def __run_command(self, args):
+        process = subprocess.Popen(args,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
                                    universal_newlines=True)
 
-        stdout, stderr = process.communicate()
+        output, err = process.communicate()
 
-        p = re.compile(r'.*touchpad', re.IGNORECASE)
-        names = p.findall(stdout)
-
-        # Get device IDs
-        ids = []
-        for name in names:
-            process = subprocess.Popen(['xinput', 'list', '--id-only',
-                                       name],
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE,
-                                       universal_newlines=True)
-
-            stdout, stderr = process.communicate()
-            ids.append(int(stdout))
-
-        self.devices = {name: dev_id for (name, dev_id) in zip(names, ids)}
+        return output, err
 
     def get_devices(self):
         return self.devices
 
-    def set_disable_while_typing(self, state):
-        process = subprocess.Popen(['xinput', '--set-prop',
-                                    'SynPS/2 Synaptics TouchPad',
-                                    'libinput Disable While Typing Enabled',
-                                    str(int(state))],
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE,
-                                   universal_newlines=True)
+    def set_disable_while_typing(self, dev_name, state):
+        args = ['xinput', '--set-prop', dev_name,
+                'libinput Disable While Typing Enabled', str(int(state))]
+        self.__run_command(args)
 
-        stdout, stderr = process.communicate()
-
-    def set_tap_to_click(self, state):
-        process = subprocess.Popen(['xinput', '--set-prop',
-                                    'SynPS/2 Synaptics TouchPad',
-                                    'libinput Tapping Enabled',
-                                    str(int(state))],
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE,
-                                   universal_newlines=True)
-
-        stdout, stderr = process.communicate()
+    def set_tap_to_click(self, dev_name, state):
+        args = ['xinput', '--set-prop', dev_name,
+                'libinput Tapping Enabled', str(int(state))]
+        self.__run_command(args)
 
     def get_device_properties(self, dev_name):
         process = subprocess.Popen(['xinput', '--list-props', dev_name],
@@ -84,10 +99,12 @@ class View(urwid.WidgetWrap):
         urwid.WidgetWrap.__init__(self, self.main_window())
 
     def on_cb_typing_change(self, w, state):
-        self.controller.model.set_disable_while_typing(state)
+        self.controller.model.set_disable_while_typing(self.curr_device.name,
+                                                       state)
 
     def on_cb_tapping_change(self, w, state):
-        self.controller.model.set_tap_to_click(state)
+        self.controller.model.set_tap_to_click(self.curr_device.name,
+                                               state)
 
     def device_change(self, button, dev_name):
         self.current_device = \
@@ -101,8 +118,17 @@ class View(urwid.WidgetWrap):
         raise urwid.ExitMainLoop()
 
     def devices_list(self):
+        devices = self.controller.model.get_devices()
+
+        if 'Touchpad 0' in devices:
+            self.curr_device = devices['Touchpad 0']
+        elif 'Mouse 0' in devices:
+            self.curr_device = devices['Mouse 0']
+        else:
+            self.curr_device = None
+
         widgets = []
-        for dev_name, dev_id in self.controller.model.get_devices().items():
+        for dev_name in devices:
             widget = urwid.Button(dev_name)
             urwid.connect_signal(widget, 'click', self.device_change, dev_name)
             widgets.append(widget)
@@ -113,7 +139,7 @@ class View(urwid.WidgetWrap):
         return w
 
     def settings_controls(self):
-        properties = self.controller.model.get_device_properties('SynPS/2 Synaptics TouchPad')
+        properties = self.curr_device.properties
 
         cb_typing = urwid.CheckBox('Disable while typing',
                                    state=bool(properties['libinput Disable While Typing Enabled']),
