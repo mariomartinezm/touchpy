@@ -128,9 +128,10 @@ class View(urwid.WidgetWrap):
             self.curr_device = None
 
         widgets = []
-        for dev_name in devices:
+        for dev_name, device in devices.items():
             widget = urwid.Button(dev_name)
-            urwid.connect_signal(widget, 'click', self.device_change, dev_name)
+            urwid.connect_signal(widget, 'click', self.device_change,
+                                 device.name)
             widgets.append(widget)
 
         w = urwid.LineBox(urwid.ListBox(urwid.SimpleListWalker(widgets)))
