@@ -1,12 +1,20 @@
 import urwid
 import subprocess
 import re
+import enum
+
+
+class DeviceType(enum.Enum):
+    Unknown = 0
+    Touchpad = 1
+    Mouse = 2
 
 
 class Device:
     def __init__(self, name):
         self.name = name
         self.dev_id = 0
+        self.type = DeviceType.Unknown
         self.properties = {}
 
 
@@ -29,12 +37,13 @@ class Model:
             args = ['xinput', 'list', '--id-only', name]
             dev_id, err = self.__run_command(args)
 
-            dev = Device(name)
-            dev.dev_id = int(dev_id)
-            dev.properties = self.get_device_properties(dev.name)
+            device = Device(name)
+            device.dev_id = int(dev_id)
+            device.type = DeviceType.Touchpad
+            device.properties = self.get_device_properties(device)
 
             key = "Touchpad " + str(index)
-            self.devices.update({key: dev})
+            self.devices.update({key: device})
 
         # Get names of mouse devices
         p = re.compile(r'.*mouse', re.IGNORECASE)
@@ -46,6 +55,7 @@ class Model:
 
             dev = Device(name)
             dev.dev_id = int(dev_id)
+            dev.type = DeviceType.Mouse
 
             key = "Mouse " + str(index)
             self.devices.update({key: dev})
@@ -73,21 +83,20 @@ class Model:
                 'libinput Tapping Enabled', str(int(state))]
         self.__run_command(args)
 
-    def get_device_properties(self, dev_name):
-        process = subprocess.Popen(['xinput', '--list-props', dev_name],
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE,
-                                   universal_newlines=True)
+    def get_device_properties(self, device):
+        args = ['xinput', '--list-props', device.name]
+        props_list, err = self.__run_command(args)
 
-        stdout, setderr = process.communicate()
-
-        properties = {'libinput Tapping Enabled': 0,
-                      'libinput Disable While Typing Enabled': 0}
+        if device.type == DeviceType.Touchpad:
+            properties = {'libinput Tapping Enabled': 0,
+                          'libinput Disable While Typing Enabled': 0}
+        else:
+            properties = {}
 
         for prop in properties.keys():
             r = re.compile(r'\s*' + prop + r' \(\d+\):\s+\d',
                            re.IGNORECASE)
-            value = r.findall(stdout)[0].split()[-1]
+            value = r.findall(props_list)[0].split()[-1]
             properties[prop] = int(value)
 
         return properties
@@ -96,6 +105,16 @@ class Model:
 class View(urwid.WidgetWrap):
     def __init__(self, controller):
         self.controller = controller
+
+        devices = self.controller.model.get_devices()
+
+        if 'Touchpad 0' in devices:
+            self.curr_device = devices['Touchpad 0']
+        elif 'Mouse 0' in devices:
+            self.curr_device = devices['Mouse 0']
+        else:
+            self.curr_device = None
+
         urwid.WidgetWrap.__init__(self, self.main_window())
 
     def on_cb_typing_change(self, w, state):
@@ -106,9 +125,9 @@ class View(urwid.WidgetWrap):
         self.controller.model.set_tap_to_click(self.curr_device.name,
                                                state)
 
-    def device_change(self, button, dev_name):
+    def device_change(self, button, device):
         self.current_device = \
-            self.controller.model.get_device_properties(dev_name)
+            self.controller.model.get_device_properties(device)
 
     def button(self, t, fn):
         w = urwid.Button(t, fn)
@@ -120,18 +139,11 @@ class View(urwid.WidgetWrap):
     def devices_list(self):
         devices = self.controller.model.get_devices()
 
-        if 'Touchpad 0' in devices:
-            self.curr_device = devices['Touchpad 0']
-        elif 'Mouse 0' in devices:
-            self.curr_device = devices['Mouse 0']
-        else:
-            self.curr_device = None
-
         widgets = []
         for dev_name, device in devices.items():
             widget = urwid.Button(dev_name)
             urwid.connect_signal(widget, 'click', self.device_change,
-                                 device.name)
+                                 device)
             widgets.append(widget)
 
         w = urwid.LineBox(urwid.ListBox(urwid.SimpleListWalker(widgets)))
@@ -139,14 +151,17 @@ class View(urwid.WidgetWrap):
 
         return w
 
-    def settings_controls(self):
+    def touchpad_widgets(self):
         properties = self.curr_device.properties
 
+        prop_name = 'libinput Disable While Typing Enabled'
         cb_typing = urwid.CheckBox('Disable while typing',
-                                   state=bool(properties['libinput Disable While Typing Enabled']),
+                                   state=bool(properties[prop_name]),
                                    on_state_change=self.on_cb_typing_change)
+
+        prop_name = 'libinput Tapping Enabled'
         cb_tapping = urwid.CheckBox('Tap to click',
-                                    state=bool(properties['libinput Tapping Enabled']),
+                                    state=bool(properties[prop_name]),
                                     on_state_change=self.on_cb_tapping_change)
 
         widgets = [
@@ -160,10 +175,23 @@ class View(urwid.WidgetWrap):
 
         return w
 
+    def mouse_widgets(self):
+        widgets = [urwid.Text('Placeholder for mouse widgets')]
+
+        w = urwid.LineBox(urwid.ListBox(urwid.SimpleListWalker(widgets)))
+        w = urwid.Frame(w, urwid.Text('Settings:'))
+
+        return w
+
     def main_window(self):
-        w = urwid.Columns([('weight', 2, self.devices_list()),
-                           ('weight', 2, self.settings_controls())],
-                          dividechars=1)
+        if self.curr_device.type == DeviceType.Touchpad:
+            w = urwid.Columns([('weight', 2, self.devices_list()),
+                               ('weight', 2, self.touchpad_widgets())],
+                              dividechars=1)
+        else:
+            w = urwid.Columns([('weight', 2, self.devices_list()),
+                               ('weight', 2, self.mouse_widgets())],
+                              dividechars=1)
 
         w = urwid.LineBox(w)
 
