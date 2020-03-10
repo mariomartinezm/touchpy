@@ -126,8 +126,14 @@ class View(urwid.WidgetWrap):
                                                state)
 
     def device_change(self, button, device):
-        self.current_device = \
-            self.controller.model.get_device_properties(device)
+        if device.type == DeviceType.Touchpad:
+            options = self.columns.options(width_amount=2)
+            self.columns.contents = [(self.frame_devices, options),
+                                     (self.frame_touchpad, options)]
+        else:
+            options = self.columns.options(width_amount=2)
+            self.columns.contents = [(self.frame_devices, options),
+                                     (self.frame_mouse, options)]
 
     def button(self, t, fn):
         w = urwid.Button(t, fn)
@@ -184,16 +190,20 @@ class View(urwid.WidgetWrap):
         return w
 
     def main_window(self):
-        if self.curr_device.type == DeviceType.Touchpad:
-            w = urwid.Columns([('weight', 2, self.devices_list()),
-                               ('weight', 2, self.touchpad_widgets())],
-                              dividechars=1)
-        else:
-            w = urwid.Columns([('weight', 2, self.devices_list()),
-                               ('weight', 2, self.mouse_widgets())],
-                              dividechars=1)
+        self.frame_devices = self.devices_list()
+        self.frame_touchpad = self.touchpad_widgets()
+        self.frame_mouse = self.mouse_widgets()
 
-        w = urwid.LineBox(w)
+        if self.curr_device.type == DeviceType.Touchpad:
+            self.columns = urwid.Columns([('weight', 2, self.frame_devices),
+                                          ('weight', 2, self.frame_touchpad)],
+                                         dividechars=1)
+        else:
+            self.columns = urwid.Columns([('weight', 2, self.frame_devices),
+                                          ('weight', 2, self.frame_mouse)],
+                                         dividechars=1)
+
+        w = urwid.LineBox(self.columns)
 
         return w
 
