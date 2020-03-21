@@ -200,7 +200,8 @@ class View(urwid.WidgetWrap):
             cb_typing,
             cb_tapping,
             urwid.Divider(div_char='-'),
-            urwid.GridFlow([urwid.Text('Cursor speed: '), self.text_speed], 15, 0, 0, 'center'),
+            urwid.GridFlow([urwid.Text('Cursor speed: '), self.text_speed],
+                           15, 0, 0, 'left'),
             urwid.Divider(div_char='-'),
             self.button('Quit', self.exit_program)
             ]
