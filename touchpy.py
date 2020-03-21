@@ -83,21 +83,31 @@ class Model:
                 'libinput Tapping Enabled', str(int(state))]
         self.__run_command(args)
 
+    def set_cursor_speed(self, dev_name, speed):
+        args = ['xinput', '--set-prop', dev_name,
+                'libinput Accel Speed', str(speed)]
+        self.__run_command(args)
+
     def get_device_properties(self, device):
         args = ['xinput', '--list-props', device.name]
         props_list, err = self.__run_command(args)
 
         if device.type == DeviceType.Touchpad:
             properties = {'libinput Tapping Enabled': 0,
-                          'libinput Disable While Typing Enabled': 0}
+                          'libinput Disable While Typing Enabled': 0,
+                          'libinput Accel Speed': 0.0}
         else:
-            properties = {}
+            properties = {'libinput Accel Speed': 0}
 
         for prop in properties.keys():
-            r = re.compile(r'\s*' + prop + r' \(\d+\):\s+\d',
+            r = re.compile(r'\s*' + prop + r' \(\d+\):\s+.+',
                            re.IGNORECASE)
             value = r.findall(props_list)[0].split()[-1]
-            properties[prop] = int(value)
+
+            if prop == 'libinput Accel Speed':
+                properties[prop] = float(value)
+            else:
+                properties[prop] = int(value)
 
         return properties
 
@@ -135,6 +145,19 @@ class View(urwid.WidgetWrap):
             self.columns.contents = [(self.frame_devices, options),
                                      (self.frame_mouse, options)]
 
+        self.curr_device = device
+
+    def on_speed_change(self, increase=True):
+        speed = float(self.text_speed.text)
+
+        if increase is True and speed < 1.0:
+            speed = speed + 0.1
+        elif increase is False and speed > -1.0:
+            speed = speed - 0.1
+
+        self.controller.model.set_cursor_speed(self.curr_device.name, speed)
+        self.text_speed.set_text('{:.1f}'.format(speed))
+
     def button(self, t, fn):
         w = urwid.Button(t, fn)
         return w
@@ -170,9 +193,15 @@ class View(urwid.WidgetWrap):
                                     state=bool(properties[prop_name]),
                                     on_state_change=self.on_cb_tapping_change)
 
+        prop_name = 'libinput Accel Speed'
+        self.text_speed = urwid.Text(str(properties[prop_name]))
+
         widgets = [
             cb_typing,
             cb_tapping,
+            urwid.Divider(div_char='-'),
+            urwid.GridFlow([urwid.Text('Cursor speed: '), self.text_speed], 15, 0, 0, 'center'),
+            urwid.Divider(div_char='-'),
             self.button('Quit', self.exit_program)
             ]
 
@@ -224,6 +253,10 @@ class Controller:
     def unhandled_input(self, k):
         if k in ('Q', 'q'):
             raise urwid.ExitMainLoop()
+        if k in ('H', 'h'):
+            self.view.on_speed_change(increase=False)
+        if k in ('L', 'l'):
+            self.view.on_speed_change(increase=True)
 
 
 def main():
