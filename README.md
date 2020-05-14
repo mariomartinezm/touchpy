@@ -32,7 +32,7 @@ Version 0.1
 
 ## Author
 
-* **Mario Martínez-Molina** 
+* **Mario Martínez-Molina** [mariomartinezm](https://github.com/mariomartinezm)
 
 ## License
 
