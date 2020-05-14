@@ -4,7 +4,7 @@ A Text User Interface for `libinput`
 
 ## Getting Started
 
-This `script` has been just proved using Arch Linux.
+This script has been just proved using Arch Linux.
 
 ### Prerequisites
 
@@ -41,5 +41,3 @@ This project is licensed under the LGPL v2.1 License - see the [LICENSE.md](LICE
 ## Acknowledgments
 
 * To [TsukiZombina](https://github.com/TsukiZombina)
-# touchpy
-A Text User Interface for libinput
