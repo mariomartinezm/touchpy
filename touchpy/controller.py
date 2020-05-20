@@ -13,6 +13,7 @@ class Controller:
 
     def main(self):
         self.loop = urwid.MainLoop(self.view,
+                                   self.view.palette,
                                    unhandled_input=self.unhandled_input)
         self.loop.run()
 
