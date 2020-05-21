@@ -1,6 +1,7 @@
 import urwid
 from model import Model
 from view import View
+import settings
 
 
 class Controller:
@@ -8,12 +9,14 @@ class Controller:
     A class responsible for running the application.
     """
     def __init__(self):
+        self.palette = settings.create_config_file()
+
         self.model = Model()
         self.view = View(self)
 
     def main(self):
         self.loop = urwid.MainLoop(self.view,
-                                   self.view.palette,
+                                   self.palette,
                                    unhandled_input=self.unhandled_input)
         self.loop.run()
 

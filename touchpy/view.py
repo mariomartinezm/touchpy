@@ -3,16 +3,6 @@ from device import DeviceType
 
 
 class View(urwid.WidgetWrap):
-    palette = [
-        ('outer_border', 'dark cyan', 'black'),
-        ('inner_border', 'dark cyan', 'black'),
-        ('header', 'yellow, bold', 'black'),
-        ('text_label', 'dark magenta', 'black'),
-        ('text_val', 'dark cyan, bold', 'black'),
-        ('button_normal', 'light green', 'black'),
-        ('button_select', 'black', 'light green')
-    ]
-
     def __init__(self, controller):
         self.controller = controller
 

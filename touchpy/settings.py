@@ -1,0 +1,40 @@
+import os
+import configparser
+
+HOME = os.getenv('HOME', os.getenv('USERPROFILE'))
+XDG_CONF_DIR = os.getenv('XDG_CONF_DIR', os.path.join(HOME, '.config'))
+CONF_DIR = os.path.join(XDG_CONF_DIR, 'touchpy')
+
+
+def create_config_file():
+    """ Create configuration file """
+    os.makedirs(CONF_DIR, exist_ok=True)
+    filename = os.path.join(CONF_DIR, 'config.ini')
+
+    config = configparser.ConfigParser()
+
+    if os.path.isfile(filename):
+        config.read(filename)
+
+        palette = []
+        for key in config['Theme']:
+            palette.append((key,) + eval(config['Theme'][key]))
+
+        return palette
+    else:
+        palette = [
+                ('outer_border', 'dark cyan', 'black'),
+                ('inner_border', 'dark cyan', 'black'),
+                ('header', 'yellow, bold', 'black'),
+                ('text_label', 'dark magenta', 'black'),
+                ('text_val', 'dark cyan, bold', 'black'),
+                ('button_normal', 'light green', 'black'),
+                ('button_select', 'black', 'light green')
+                ]
+
+        config['Theme'] = {}
+        for p in palette:
+            config['Theme'][p[0]] = str((p[1], p[2], ))
+
+        with open(filename, 'w') as configfile:
+            config.write(configfile)
