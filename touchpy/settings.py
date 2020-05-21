@@ -35,3 +35,5 @@ def create_config_file():
 
         with open(filename, 'w') as configfile:
             config.write(configfile)
+
+        return palette
