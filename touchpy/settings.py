@@ -16,9 +16,8 @@ def create_config_file():
     if os.path.isfile(filename):
         config.read(filename)
 
-        palette = []
-        for key in config['Theme']:
-            palette.append((key,) + eval(config['Theme'][key]))
+        palette = [(key,) + eval(config['Theme'][key]) for key in
+                   config['Theme']]
 
         return palette
     else:
@@ -32,9 +31,7 @@ def create_config_file():
                 ('button_select', 'black', 'light green')
                 ]
 
-        config['Theme'] = {}
-        for p in palette:
-            config['Theme'][p[0]] = str((p[1], p[2], ))
+        config['Theme'] = {p[0]: str((p[1], p[2], )) for p in palette}
 
         with open(filename, 'w') as configfile:
             config.write(configfile)
