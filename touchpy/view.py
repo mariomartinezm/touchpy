@@ -61,7 +61,7 @@ class View(urwid.WidgetWrap):
 
         widgets = []
         for dev_name, device in devices.items():
-            widget = urwid.Button(dev_name)
+            widget = urwid.Button(device.name)
             urwid.connect_signal(widget, 'click', self.device_change,
                                  device)
             widget = urwid.AttrWrap(widget, 'button_normal', 'button_select')
