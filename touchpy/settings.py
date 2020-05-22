@@ -1,5 +1,6 @@
 import os
 import configparser
+from ast import literal_eval as make_tuple
 
 HOME = os.getenv('HOME', os.getenv('USERPROFILE'))
 XDG_CONF_DIR = os.getenv('XDG_CONF_DIR', os.path.join(HOME, '.config'))
@@ -16,7 +17,7 @@ def create_config_file():
     if os.path.isfile(filename):
         config.read(filename)
 
-        palette = [(key,) + eval(config['Theme'][key]) for key in
+        palette = [(key,) + make_tuple(config['Theme'][key]) for key in
                    config['Theme']]
 
         return palette
