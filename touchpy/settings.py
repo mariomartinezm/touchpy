@@ -23,12 +23,12 @@ def create_config_file():
         return palette
     else:
         palette = [
-                ('outer_border', 'dark cyan', 'black'),
-                ('inner_border', 'dark cyan', 'black'),
-                ('header', 'yellow, bold', 'black'),
-                ('text_label', 'dark magenta', 'black'),
-                ('text_val', 'dark cyan, bold', 'black'),
-                ('button_normal', 'light green', 'black'),
+                ('outer_border', 'dark cyan', 'default'),
+                ('inner_border', 'dark cyan', 'default'),
+                ('header', 'yellow, bold', 'default'),
+                ('text_label', 'dark magenta', 'default'),
+                ('text_val', 'dark cyan, bold', 'default'),
+                ('button_normal', 'light green', 'default'),
                 ('button_select', 'black', 'light green')
                 ]
 
