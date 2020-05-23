@@ -18,6 +18,7 @@ class Controller:
         self.loop = urwid.MainLoop(self.view,
                                    self.palette,
                                    unhandled_input=self.unhandled_input)
+        self.loop.screen.set_terminal_properties(colors=2**24)
         self.loop.run()
 
     def unhandled_input(self, k):
