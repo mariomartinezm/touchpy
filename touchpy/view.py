@@ -46,10 +46,11 @@ class View(urwid.WidgetWrap):
             speed = speed - 0.1
 
         self.controller.model.set_cursor_speed(self.curr_device.name, speed)
-        self.text_speed.set_text('{:.1f}'.format(speed))
+        self.text_speed.set_text(('text_val', '{:.1f}'.format(speed)))
 
     def button(self, t, fn):
         w = urwid.Button(t, fn)
+        w = urwid.AttrWrap(w, 'button_normal', 'button_select')
         return w
 
     def exit_program(self, w):
@@ -60,13 +61,15 @@ class View(urwid.WidgetWrap):
 
         widgets = []
         for dev_name, device in devices.items():
-            widget = urwid.Button(dev_name)
+            widget = urwid.Button(device.name)
             urwid.connect_signal(widget, 'click', self.device_change,
                                  device)
+            widget = urwid.AttrWrap(widget, 'button_normal', 'button_select')
             widgets.append(widget)
 
         w = urwid.LineBox(urwid.ListBox(urwid.SimpleListWalker(widgets)))
-        w = urwid.Frame(w, urwid.Text('Devices:'))
+        w = urwid.AttrWrap(w, 'inner_border')
+        w = urwid.Frame(w, urwid.Text(('header', 'Devices:')))
 
         return w
 
@@ -77,27 +80,32 @@ class View(urwid.WidgetWrap):
         cb_typing = urwid.CheckBox('Disable while typing',
                                    state=bool(properties[prop_name]),
                                    on_state_change=self.on_cb_typing_change)
+        cb_typing = urwid.AttrWrap(cb_typing, 'text_label')
 
         prop_name = 'libinput Tapping Enabled'
         cb_tapping = urwid.CheckBox('Tap to click',
                                     state=bool(properties[prop_name]),
                                     on_state_change=self.on_cb_tapping_change)
+        cb_tapping = urwid.AttrWrap(cb_tapping, 'text_label')
 
         prop_name = 'libinput Accel Speed'
-        self.text_speed = urwid.Text(str(properties[prop_name]))
+        self.text_speed = urwid.Text(('text_val',
+                                     str(properties[prop_name])))
 
         widgets = [
             cb_typing,
             cb_tapping,
             urwid.Divider(div_char='-'),
-            urwid.GridFlow([urwid.Text('Cursor speed: '), self.text_speed],
+            urwid.GridFlow([urwid.Text(('text_label', 'Cursor speed: ')),
+                           self.text_speed],
                            15, 0, 0, 'left'),
             urwid.Divider(div_char='-'),
             self.button('Quit', self.exit_program)
             ]
 
         w = urwid.LineBox(urwid.ListBox(urwid.SimpleListWalker(widgets)))
-        w = urwid.Frame(w, urwid.Text('Settings:'))
+        w = urwid.AttrWrap(w, 'inner_border')
+        w = urwid.Frame(w, urwid.Text(('header', 'Settings:')))
 
         return w
 
@@ -105,7 +113,8 @@ class View(urwid.WidgetWrap):
         widgets = [urwid.Text('Placeholder for mouse widgets')]
 
         w = urwid.LineBox(urwid.ListBox(urwid.SimpleListWalker(widgets)))
-        w = urwid.Frame(w, urwid.Text('Settings:'))
+        w = urwid.AttrWrap(w, 'inner_border')
+        w = urwid.Frame(w, urwid.Text(('header', 'Settings:')))
 
         return w
 
@@ -124,5 +133,6 @@ class View(urwid.WidgetWrap):
                                          dividechars=1)
 
         w = urwid.LineBox(self.columns)
+        w = urwid.AttrWrap(w, 'outer_border')
 
         return w
