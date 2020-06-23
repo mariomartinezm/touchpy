@@ -35,7 +35,7 @@ $ git clone https://github.com/mariomartinezm/touchpy
 
   3. `cd` into the repository.
 
-  4. Run with `python touchpy'.
+  4. Run with `python touchpy`.
 
 ## Contributing
 
