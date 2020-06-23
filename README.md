@@ -1,26 +1,41 @@
 # Touchpy
 
-A Text User Interface for `libinput`
+A Text User Interface to configure mouse and touchpad devices in Linux with `libinput`.
+
+<img src="images/touchpy.png" alt="img" align="center">
+
+Touchpy provides an easy way to configure the following settings using `libinput`:
+
+  * Cursor speed.
+  * Tap to click.
+  * Disable touchpad while typing.
+
+You can also configure Touchpy's color scheme by editing its configuracion file located at  `~/.config/touchpy/config.ini`.
+
+**Note**: Touchpy can only configure devices managed through libinput, i.e., it cannot configure devices that use the Synaptics drivers.
 
 ## Getting Started
 
-This script has been just proved using Arch Linux.
+### Dependencies
 
-### Prerequisites
-
-You need to have `urwind` installed, you can do that throught `pip`
-
-```
-pip install urwind
-```
+  * `libinput`
+  * `Python 3.7+`
+  * `urwid 2.1+`
 
 ### Installing
 
-You can run it through
+  **Note**: It is recommended to create a virtual environment to install dependencies.
 
+  1. Clone the repository to a local directory:
+```sh
+$ git clone https://github.com/mariomartinezm/touchpy
 ```
-python touchpy.py
-```
+
+  2. Install dependencies with `pip install touchpy`
+
+  3. `cd` into the repository.
+
+  4. Run with `python touchpy'.
 
 ## Contributing
 
