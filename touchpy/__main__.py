@@ -7,5 +7,7 @@ def main():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG, filename='touchpy.log')
+    logging.basicConfig(level=logging.DEBUG,
+                        filename='touchpy.log',
+                        filemode='w')
     main()
