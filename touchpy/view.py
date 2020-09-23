@@ -1,5 +1,4 @@
 import urwid
-from device import DeviceType
 
 
 class View(urwid.WidgetWrap):
@@ -8,10 +7,8 @@ class View(urwid.WidgetWrap):
 
         devices = self.controller.model.get_devices()
 
-        if 'Touchpad 0' in devices:
-            self.curr_device = devices['Touchpad 0']
-        elif 'Mouse 0' in devices:
-            self.curr_device = devices['Mouse 0']
+        if 'device 0' in devices:
+            self.curr_device = devices['device 0']
         else:
             self.curr_device = None
 
@@ -26,16 +23,15 @@ class View(urwid.WidgetWrap):
                                                state)
 
     def device_change(self, button, device):
-        if device.type == DeviceType.Touchpad:
-            options = self.columns.options(width_amount=2)
-            self.columns.contents = [(self.frame_devices, options),
-                                     (self.frame_touchpad, options)]
-        else:
-            options = self.columns.options(width_amount=2)
-            self.columns.contents = [(self.frame_devices, options),
-                                     (self.frame_mouse, options)]
-
         self.curr_device = device
+
+        self.frame_settings = None
+        self.frame_settings = self.settings_widgets()
+
+        options = self.columns.options(width_amount=2)
+        self.columns.contents = [(self.frame_devices, options),
+                                 (self.frame_settings, options)]
+
 
     def on_speed_change(self, increase=True):
         speed = float(self.text_speed.text)
@@ -73,44 +69,45 @@ class View(urwid.WidgetWrap):
 
         return w
 
-    def touchpad_widgets(self):
+    def settings_widgets(self):
         properties = self.curr_device.properties
 
-        prop_name = 'libinput Disable While Typing Enabled'
-        cb_typing = urwid.CheckBox('Disable while typing',
-                                   state=bool(properties[prop_name]),
-                                   on_state_change=self.on_cb_typing_change)
-        cb_typing = urwid.AttrWrap(cb_typing, 'text_label')
+        cb_typing = None
+        cb_tapping = None
+        self.text_speed = None
 
-        prop_name = 'libinput Tapping Enabled'
-        cb_tapping = urwid.CheckBox('Tap to click',
-                                    state=bool(properties[prop_name]),
-                                    on_state_change=self.on_cb_tapping_change)
-        cb_tapping = urwid.AttrWrap(cb_tapping, 'text_label')
+        widgets = []
+        for p, val in properties.items():
+            if p == 'libinput Disable While Typing Enabled':
+                cb_typing = urwid.CheckBox('Disable while typing',
+                                           state=bool(properties[p]),
+                                           on_state_change=self.on_cb_typing_change)
+                cb_typing = urwid.AttrWrap(cb_typing, 'text_label')
+            elif p == 'libinput Tapping Enabled':
+                cb_tapping = urwid.CheckBox('Tap to click',
+                        state=bool(properties[p]),
+                        on_state_change=self.on_cb_tapping_change)
+                cb_tapping = urwid.AttrWrap(cb_tapping, 'text_label')
+            elif p == 'libinput Accel Speed':
+                self.text_speed = urwid.Text(('text_val',
+                    str(properties[p])))
 
-        prop_name = 'libinput Accel Speed'
-        self.text_speed = urwid.Text(('text_val',
-                                     str(properties[prop_name])))
+        if cb_typing is not None:
+            widgets.append(cb_typing)
 
-        widgets = [
-            cb_typing,
-            cb_tapping,
-            urwid.Divider(div_char='-'),
-            urwid.GridFlow([urwid.Text(('text_label', 'Cursor speed: ')),
-                           self.text_speed],
-                           15, 0, 0, 'left'),
-            urwid.Divider(div_char='-'),
-            self.button('Quit', self.exit_program)
-            ]
+        if cb_typing is not None:
+            widgets.append(cb_tapping)
 
-        w = urwid.LineBox(urwid.ListBox(urwid.SimpleListWalker(widgets)))
-        w = urwid.AttrWrap(w, 'inner_border')
-        w = urwid.Frame(w, urwid.Text(('header', 'Settings:')))
+        if self.text_speed is not None:
+            if (cb_typing is not None) or (cb_tapping is not None):
+                widgets.append(urwid.Divider(div_char='-'))
 
-        return w
+            widgets.append(urwid.GridFlow([urwid.Text(('text_label', 'Cursor speed: ')),
+                self.text_speed],
+                15, 0, 0, 'left'))
+            widgets.append(urwid.Divider(div_char='-'))
 
-    def mouse_widgets(self):
-        widgets = [urwid.Text('Placeholder for mouse widgets')]
+        widgets.append(self.button('Quit', self.exit_program))
 
         w = urwid.LineBox(urwid.ListBox(urwid.SimpleListWalker(widgets)))
         w = urwid.AttrWrap(w, 'inner_border')
@@ -120,17 +117,11 @@ class View(urwid.WidgetWrap):
 
     def main_window(self):
         self.frame_devices = self.devices_list()
-        self.frame_touchpad = self.touchpad_widgets()
-        self.frame_mouse = self.mouse_widgets()
+        self.frame_settings = self.settings_widgets()
 
-        if self.curr_device.type == DeviceType.Touchpad:
-            self.columns = urwid.Columns([('weight', 2, self.frame_devices),
-                                          ('weight', 2, self.frame_touchpad)],
-                                         dividechars=1)
-        else:
-            self.columns = urwid.Columns([('weight', 2, self.frame_devices),
-                                          ('weight', 2, self.frame_mouse)],
-                                         dividechars=1)
+        self.columns = urwid.Columns([('weight', 2, self.frame_devices),
+                                      ('weight', 2, self.frame_settings)],
+                                      dividechars=1)
 
         w = urwid.LineBox(self.columns)
         w = urwid.AttrWrap(w, 'outer_border')

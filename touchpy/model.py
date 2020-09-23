@@ -1,7 +1,7 @@
 import re
 import subprocess
+import logging
 from device import Device
-from device import DeviceType
 
 
 class Model:
@@ -9,42 +9,35 @@ class Model:
     A class responsible for interfacing with libinput
     """
     def __init__(self):
-        # Get names of all devices managed by libinput
+        logging.debug('Getting device names...')
         args = ['xinput', 'list', '--name-only']
-        full_names, err = self.__run_command(args)
+        device_names, err = self.__run_command(args)
+        device_names = device_names.splitlines()
+        logging.debug(f'Done, got {len(device_names)} devices.')
 
-        # Get names of touchpad devices
-        p = re.compile(r'.*touchpad', re.IGNORECASE)
-        names = p.findall(full_names)
-
+        # Since libinput does not expose the device type to the caller, it
+        # is neccesary to use the device's properties to determine if the
+        # device will be supported
         self.devices = {}
+        dev_index = 0
 
-        for name, index in zip(names, range(0, len(names))):
-            args = ['xinput', 'list', '--id-only', name]
-            dev_id, err = self.__run_command(args)
+        for dev_name in device_names:
+            properties = self.get_device_properties(dev_name)
 
-            device = Device(name)
-            device.dev_id = int(dev_id)
-            device.type = DeviceType.Touchpad
-            device.properties = self.get_device_properties(device)
+            dev_prop = {p: val for p, val in properties.items()
+                        if p in
+                        ['libinput Tapping Enabled',
+                         'libinput Disable While Typing Enabled',
+                         'libinput Accel Speed']}
 
-            key = "Touchpad " + str(index)
-            self.devices.update({key: device})
+            if len(dev_prop) > 0:
+                device = Device(dev_name)
+                device.properties = dev_prop
 
-        # Get names of mouse devices
-        p = re.compile(r'.*mouse', re.IGNORECASE)
-        names = p.findall(full_names)
+                key = f"device {dev_index}"
+                self.devices[key] = device
 
-        for name, index in zip(names, range(0, len(names))):
-            args = ['xinput', 'list', '--id-only', name]
-            dev_id, err = self.__run_command(args)
-
-            dev = Device(name)
-            dev.dev_id = int(dev_id)
-            dev.type = DeviceType.Mouse
-
-            key = "Mouse " + str(index)
-            self.devices.update({key: dev})
+                dev_index += 1
 
     def __run_command(self, args):
         process = subprocess.Popen(args,
@@ -74,25 +67,14 @@ class Model:
                 'libinput Accel Speed', str(speed)]
         self.__run_command(args)
 
-    def get_device_properties(self, device):
-        args = ['xinput', '--list-props', device.name]
-        props_list, err = self.__run_command(args)
+    def get_device_properties(self, dev_name):
+        args = ['xinput', '--list-props', dev_name]
+        output, err = self.__run_command(args)
 
-        if device.type == DeviceType.Touchpad:
-            properties = {'libinput Tapping Enabled': 0,
-                          'libinput Disable While Typing Enabled': 0,
-                          'libinput Accel Speed': 0.0}
-        else:
-            properties = {'libinput Accel Speed': 0}
-
-        for prop in properties.keys():
-            r = re.compile(r'\s*' + prop + r' \(\d+\):\s+.+',
-                           re.IGNORECASE)
-            value = r.findall(props_list)[0].split()[-1]
-
-            if prop == 'libinput Accel Speed':
-                properties[prop] = float(value)
-            else:
-                properties[prop] = int(value)
+        # Discard the first line since it contains the device name
+        properties = {}
+        for line in output.splitlines()[1:]:
+            match = re.search('\s(.*)\s+\((.*)\):\s+(.*)', line)
+            properties[match.group(1)] = match.group(3)
 
         return properties
