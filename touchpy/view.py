@@ -23,14 +23,15 @@ class View(urwid.WidgetWrap):
                                                state)
 
     def device_change(self, button, device):
-        self.curr_device = device
+        if self.curr_device.name != device.name:
+            self.curr_device = device
 
-        self.frame_settings = None
-        self.frame_settings = self.settings_widgets()
+            self.frame_settings = None
+            self.frame_settings = self.settings_widgets()
 
-        options = self.columns.options(width_amount=2)
-        self.columns.contents = [(self.frame_devices, options),
-                                 (self.frame_settings, options)]
+            options = self.columns.options(width_amount=2)
+            self.columns.contents = [(self.frame_devices, options),
+                                     (self.frame_settings, options)]
 
 
     def on_speed_change(self, increase=True):
