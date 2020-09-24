@@ -81,12 +81,12 @@ class View(urwid.WidgetWrap):
         for p, val in properties.items():
             if p == 'libinput Disable While Typing Enabled':
                 cb_typing = urwid.CheckBox('Disable while typing',
-                                           state=bool(properties[p]),
+                                           state=bool(int(properties[p])),
                                            on_state_change=self.on_cb_typing_change)
                 cb_typing = urwid.AttrWrap(cb_typing, 'text_label')
             elif p == 'libinput Tapping Enabled':
                 cb_tapping = urwid.CheckBox('Tap to click',
-                        state=bool(properties[p]),
+                        state=bool(int(properties[p])),
                         on_state_change=self.on_cb_tapping_change)
                 cb_tapping = urwid.AttrWrap(cb_tapping, 'text_label')
             elif p == 'libinput Accel Speed':

@@ -53,18 +53,33 @@ class Model:
         return self.devices
 
     def set_disable_while_typing(self, dev_name, state):
-        args = ['xinput', '--set-prop', dev_name,
-                'libinput Disable While Typing Enabled', str(int(state))]
+        p = 'libinput Disable While Typing Enabled'
+
+        for index, device in self.devices.items():
+            if device.name == dev_name:
+                device.properties[p] = state
+
+        args = ['xinput', '--set-prop', dev_name, p, str(int(state))]
         self.__run_command(args)
 
     def set_tap_to_click(self, dev_name, state):
-        args = ['xinput', '--set-prop', dev_name,
-                'libinput Tapping Enabled', str(int(state))]
+        p = 'libinput Tapping Enabled'
+
+        for index, device in self.devices.items():
+            if device.name == dev_name:
+                device.properties[p] = state
+
+        args = ['xinput', '--set-prop', dev_name, p, str(int(state))]
         self.__run_command(args)
 
     def set_cursor_speed(self, dev_name, speed):
-        args = ['xinput', '--set-prop', dev_name,
-                'libinput Accel Speed', str(speed)]
+        p = 'libinput Accel Speed'
+
+        for index, device in self.devices.items():
+            if device.name == dev_name:
+                device.properties[p] = speed
+
+        args = ['xinput', '--set-prop', dev_name, p, str(speed)]
         self.__run_command(args)
 
     def get_device_properties(self, dev_name):
